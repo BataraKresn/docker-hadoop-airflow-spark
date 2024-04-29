@@ -17,7 +17,7 @@ if [[ "$PWD" != "airflow" ]]; then
 fi
 
 # docker compose -f docker-compose-airflow.yml up -d
-docker compose -f docker-compose-airflow-hadoop.yml up -d
+docker compose -f docker-compose-airflow.yml up -d
 
 # Run Spark Cluster
 if [[ "$PWD" != "spark" ]]; then

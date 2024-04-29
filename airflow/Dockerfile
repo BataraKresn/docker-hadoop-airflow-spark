@@ -97,4 +97,4 @@ RUN sed -i 's/^xcom_backend =.*/xcom_backend = airflow.providers.redis.xcom.Redi
     sed -i 's/^result_backend =.*/result_backend = db+redis:\/\/:@redis:6379\/0/' /home/airflow/airflow.cfg
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["webserver"]
+CMD ["airflow", "webserver"]

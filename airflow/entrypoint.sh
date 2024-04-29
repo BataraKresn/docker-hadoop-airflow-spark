@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 
-# User-provided configuration must always be respected.
-#
-# Therefore, this script must only derive Airflow AIRFLOW__ variables from other variables
-# when the user did not provide their own configuration.
-
+# Number of retry attempts for service readiness
 TRY_LOOP="20"
 
-# Global defaults and back-compat
+# Global defaults and environment setup
 : "${AIRFLOW_HOME:="/usr/local/airflow"}"
 : "${AIRFLOW__CORE__FERNET_KEY:=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")}}"
 : "${AIRFLOW__CORE__EXECUTOR:=${EXECUTOR:-CeleryExecutor}}"
 
-# Load DAGs examples (default: Yes)
-if [[ -z "$AIRFLOW__CORE__LOAD_EXAMPLES" && "${LOAD_EX:=n}" == n ]]; then
+# Configure to load DAG examples
+if [[ -z "$AIRFLOW__CORE__LOAD_EXAMPLES" && "${LOAD_EX:=n}" == "n" ]]; then
   AIRFLOW__CORE__LOAD_EXAMPLES=False
 fi
 
@@ -23,107 +19,104 @@ export \
   AIRFLOW__CORE__FERNET_KEY \
   AIRFLOW__CORE__LOAD_EXAMPLES
 
-# Install custom python package if requirements.txt is present
+# Check if requirements.txt is present and install custom Python packages
 if [ -e "/requirements.txt" ]; then
-    pip install --user -r /requirements.txt
+  echo "Installing custom Python packages from requirements.txt"
+  pip install --user -r /requirements.txt
 fi
 
-# exponential backoff
+# Exponential backoff function for service readiness
 wait_for_port() {
-  local name="$1" host="$2" port="$3"
+  local name="$1"
+  local host="$2"
+  local port="$3"
   local j=0
   while ! nc -z "$host" "$port" >/dev/null 2>&1 < /dev/null; do
-    j=$((j+1))
+    j=$((j + 1))
     if [ $j -ge $TRY_LOOP ]; then
-      echo >&2 "$(date) - $host:$port still not reachable, giving up"
+      echo "$(date) - $host:$port is not reachable after $TRY_LOOP attempts, exiting"
       exit 1
     fi
-    echo "$(date) - waiting for $name... $j/$TRY_LOOP"
+    echo "$(date) - Waiting for $name ($host:$port)... Attempt $j/$TRY_LOOP"
     sleep 5
   done
 }
 
-# Other executors than SequentialExecutor drive the need for an SQL database, here PostgreSQL is used
+# If the executor is not SequentialExecutor, ensure PostgreSQL is ready
 if [ "$AIRFLOW__CORE__EXECUTOR" != "SequentialExecutor" ]; then
-  # Check if the user has provided explicit Airflow configuration concerning the database
+  # Check if SQLAlchemy connection is set, otherwise set default values
   if [ -z "$AIRFLOW__CORE__SQL_ALCHEMY_CONN" ]; then
-    # Default values corresponding to the default compose files
     : "${POSTGRES_HOST:="postgres"}"
     : "${POSTGRES_PORT:="5432"}"
     : "${POSTGRES_USER:="airflow"}"
     : "${POSTGRES_PASSWORD:="airflow"}"
     : "${POSTGRES_DB:="airflow"}"
-    : "${POSTGRES_EXTRAS:-""}"
-
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_EXTRAS}"
+    
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN="postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
     export AIRFLOW__CORE__SQL_ALCHEMY_CONN
-
-    # Check if the user has provided explicit Airflow configuration for the broker's connection to the database
+    
+    # For CeleryExecutor, ensure the result backend is set
     if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
-      AIRFLOW__CELERY__RESULT_BACKEND="db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}${POSTGRES_EXTRAS}"
+      AIRFLOW__CELERY__RESULT_BACKEND="db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
       export AIRFLOW__CELERY__RESULT_BACKEND
     fi
   else
-    if [[ "$AIRFLOW__CORE__EXECUTOR" == "CeleryExecutor" && -z "$AIRFLOW__CELERY__RESULT_BACKEND" ]]; then
-      >&2 printf '%s\n' "FATAL: if you set AIRFLOW__CORE__SQL_ALCHEMY_CONN manually with CeleryExecutor you must also set AIRFLOW__CELERY__RESULT_BACKEND"
-      exit 1
-    fi
-
-    # Derive useful variables from the AIRFLOW__ variables provided explicitly by the user
-    POSTGRES_ENDPOINT=$(echo -n "$AIRFLOW__CORE__SQL_ALCHEMY_CONN" | cut -d '/' -f3 | sed -e 's,.*@,,')
+    # Derive useful variables from SQLAlchemy connection
+    POSTGRES_ENDPOINT=$(echo "$AIRFLOW__CORE__SQL_ALCHEMY_CONN" | cut -d '/' -f3 | sed -e 's,.*@,,')
     POSTGRES_HOST=$(echo -n "$POSTGRES_ENDPOINT" | cut -d ':' -f1)
     POSTGRES_PORT=$(echo -n "$POSTGRES_ENDPOINT" | cut -d ':' -f2)
   fi
 
+  # Wait for PostgreSQL to be ready
   wait_for_port "Postgres" "$POSTGRES_HOST" "$POSTGRES_PORT"
 fi
 
-# CeleryExecutor drives the need for a Celery broker, here Redis is used
+# CeleryExecutor requires a broker, typically Redis
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
-  # Check if the user has provided explicit Airflow configuration concerning the broker
   if [ -z "$AIRFLOW__CELERY__BROKER_URL" ]; then
-    # Default values corresponding to the default compose files
-    : "${REDIS_PROTO:="redis://"}"
     : "${REDIS_HOST:="redis"}"
     : "${REDIS_PORT:="6379"}"
-    : "${REDIS_PASSWORD:=""}"
-    : "${REDIS_DBNUM:="1"}"
-
-    # When Redis is secured by basic auth, it does not handle the username part of basic auth, only a token
-    if [ -n "$REDIS_PASSWORD" ]; then
-      REDIS_PREFIX=":${REDIS_PASSWORD}@"
-    else
-      REDIS_PREFIX=
-    fi
-
-    AIRFLOW__CELERY__BROKER_URL="${REDIS_PROTO}${REDIS_PREFIX}${REDIS_HOST}:${REDIS_PORT}/${REDIS_DBNUM}"
+    
+    AIRFLOW__CELERY__BROKER_URL="redis://$REDIS_HOST:$REDIS_PORT"
     export AIRFLOW__CELERY__BROKER_URL
-  else
-    # Derive useful variables from the AIRFLOW__ variables provided explicitly by the user
-    REDIS_ENDPOINT=$(echo -n "$AIRFLOW__CELERY__BROKER_URL" | cut -d '/' -f3 | sed -e 's,.*@,,')
-    REDIS_HOST=$(echo -n "$POSTGRES_ENDPOINT" | cut -d ':' -f1)
-    REDIS_PORT=$(echo -n "$POSTGRES_ENDPOINT" | cut -d ':' -f2)
   fi
-
+  
+  # Wait for Redis to be ready
   wait_for_port "Redis" "$REDIS_HOST" "$REDIS_PORT"
 fi
 
+# Case statement to handle different commands for Airflow
 case "$1" in
   webserver)
+    # Start the Airflow webserver
     airflow db migrate
     if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ] || [ "$AIRFLOW__CORE__EXECUTOR" = "SequentialExecutor" ]; then
-      # With the "Local" and "Sequential" executors it should all run in one container.
       airflow scheduler &
     fi
     exec airflow webserver
     ;;
-  worker|scheduler|flower|version)
-    # Give the webserver time to run initdb.
-    sleep 10
-    exec airflow "$@"
+  scheduler)
+    # Start the scheduler
+    exec airflow scheduler
+    ;;
+  flower)
+    # Start Flower for monitoring
+    exec airflow flower
+    ;;
+  triggerer)
+    # Start the triggerer
+    exec airflow triggerer
+    ;;
+  cli)
+    # Start the CLI
+    exec bash
+    ;;
+  worker)
+    # Start a Celery worker
+    exec airflow worker
     ;;
   *)
-    # The command is something like bash, not an airflow subcommand. Just run it in the right environment.
+    # If the command is not recognized, run it as-is
     exec "$@"
     ;;
 esac

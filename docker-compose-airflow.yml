@@ -2,47 +2,74 @@ x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-airflow-hadoop-base:3.3.6}
   environment:
     - AIRFLOW_HOME=/home/airflow
-    - AIRFLOW__CORE__DAGS_FOLDER=/home/airflow/dags
-    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
-    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+    - AIRFLOW__CORE_dags_folder=/home/airflow/dags
+    - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+    - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
     - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
-    - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+    - RATELIMIT_STORAGE_URL=redis://redis:6379
+    - TZ=Asia/Jakarta
   volumes:
-    - ./output:/home/airflow/output
+    - /bigdata/airflow/output:/home/airflow/output
     - ./dags:/home/airflow/dags
-    - ./plugins:/home/airflow/plugins
-    - ./logs:/home/airflow/logs
+    - /bigdata/airflow/plugins:/home/airflow/plugins
+    - /bigdata/airflow/logs:/home/airflow/logs
     - ./data/:/hadoop-data/input
     - ./map_reduce/:/hadoop-data/map_reduce
   depends_on:
     - postgres
+    - redis
   networks:
     - hadoop_network
 
 services:
   postgres:
     image: postgres:latest
+    container_name: postgres
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
       - POSTGRES_DB=airflow
       - POSTGRES_HOST_AUTH_METHOD=trust
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
-      - postgres_airflow:/var/lib/postgresql/data
+    - /bigdata/postgres/data:/var/lib/postgresql/data   # Mount PostgreSQL data volume
+    - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
     networks:
       - hadoop_network
     
   pgadmin:
     image: dpage/pgadmin4
+    container_name: pgadmin
     environment:
       - PGADMIN_DEFAULT_EMAIL=bigdata0124@gmail.com
       - PGADMIN_DEFAULT_PASSWORD=3J1}/Ux82Y5;
     ports:
-      - "5050:5050" # Expose pgAdmin port for external access
+      - 5000:80 # Expose pgAdmin port for external access
+    volumes:
+      - /bigdata/postgres/pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - hadoop_network
+  
+  redis:
+    image: redis:latest
+    container_name: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+    ports:
+      - "6379:6379"
+    volumes:
+      - /bigdata/redis/data:/data
+    restart: always
     networks:
       - hadoop_network
 
@@ -52,22 +79,93 @@ services:
     entrypoint: /bin/bash
     command:
       - -c
-      - airflow users list || ( airflow db init && airflow db migrate && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname airflow )
+      - airflow db migrate && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname airflow
     restart: on-failure
+    networks:
+      - hadoop_network
 
   airflow-webserver:
     <<: *airflow-common
     command: airflow webserver
     ports:
-      - "8080:8080"
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
     container_name: airflow_webserver
     restart: always
 
   airflow-scheduler:
     <<: *airflow-common
     command: airflow scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 5
     container_name: airflow_scheduler
     restart: always
+
+  airflow-flower:
+    <<: *airflow-common
+    command: airflow flower
+    container_name: airflow_flower
+    ports:
+      - "5555:5555"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    depends_on:
+      - airflow-init
+    networks:
+      - hadoop_network
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    container_name: airflow_triggerer
+    restart: always
+    depends_on:
+      - airflow-init
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - hadoop_network
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    container_name: airflow_worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - airflow-init
+      - redis
+    networks:
+      - hadoop_network
+  
+  airflow-cli:
+    <<: *airflow-common
+    container_name: airflow_cli
+    command: /bin/bash
+    depends_on:
+      - airflow-init
+      - redis
+    networks:
+      - hadoop_network
 
 networks:
   hadoop_network:

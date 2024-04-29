@@ -66,23 +66,23 @@ services:
     networks:
       - hadoop_network
 
-  nodemanager2:
-    build: ./nodemanager
-    container_name: nodemanager2
-    depends_on:
-      - resourcemanager
-      - namenode
-      - datanode1
-      - datanode2
-    env_file:
-      - ./hadoop.env
-    volumes:
-      - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
-      - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
-    ports:
-      - 8043:8042
-    networks:
-      - hadoop_network
+  # nodemanager2:
+  #   build: ./nodemanager
+  #   container_name: nodemanager2
+  #   depends_on:
+  #     - resourcemanager
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  #   volumes:
+  #     - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
+  #     - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
+  #   ports:
+  #     - 8043:8043
+  #   networks:
+  #     - hadoop_network
 
   datanode1:
     build: ./datanode

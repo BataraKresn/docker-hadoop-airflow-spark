@@ -1,11 +1,15 @@
-x-airflow-common: &airflow-common
+x-airflow-common: 
+  &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-hadoop-base:3.3.6}
   environment:
+    &airflow-common-env
     - AIRFLOW_HOME=/home/airflow
     - AIRFLOW__CORE_dags_folder=/home/airflow/dags
     - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
     - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+    - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
     - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
     - RATELIMIT_STORAGE_URL=redis://redis:6379
@@ -17,11 +21,12 @@ x-airflow-common: &airflow-common
     - /bigdata/airflow/logs:/home/airflow/logs
     - ./data/:/hadoop-data/input
     - ./map_reduce/:/hadoop-data/map_reduce
-  depends_on:
-    - postgres
-    - redis
-  networks:
-    - hadoop_network
+x-airflow-common-depends-on: 
+  &airflow-common-depends-on
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
 
 services:
   namenode:
@@ -91,23 +96,23 @@ services:
     networks:
       - hadoop_network
 
-  nodemanager2:
-    build: ./nodemanager
-    container_name: nodemanager2
-    depends_on:
-      - resourcemanager
-      - namenode
-      - datanode1
-      - datanode2
-    env_file:
-      - ./hadoop.env
-    volumes:
-      - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
-      - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
-    ports:
-      - 8043:8042
-    networks:
-      - hadoop_network
+  # nodemanager2:
+  #   build: ./nodemanager
+  #   container_name: nodemanager2
+  #   depends_on:
+  #     - resourcemanager
+  #     - namenode
+  #     - datanode1
+  #     - datanode2
+  #   env_file:
+  #     - ./hadoop.env
+  #   volumes:
+  #     - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
+  #     - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
+  #   ports:
+  #     - 8043:8043
+  #   networks:
+  #     - hadoop_network
 
   datanode1:
     build: ./datanode
@@ -179,6 +184,11 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
     ports:
       - "6379:6379"
     volumes:
@@ -195,6 +205,8 @@ services:
       - -c
       - airflow db migrate && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname airflow
     restart: on-failure
+    networks:
+      - hadoop_network
 
   airflow-webserver:
     <<: *airflow-common
@@ -202,13 +214,76 @@ services:
     ports:
       - 8080:8080
     container_name: airflow_webserver
+    depends_on: 
+      - postgres
+      - redis
+      - airflow-init
     restart: always
-
+    networks:
+      - hadoop_network
+  
   airflow-scheduler:
     <<: *airflow-common
     command: airflow scheduler
     container_name: airflow_scheduler
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
     restart: always
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+    depends_on: 
+      - postgres
+      - redis
+      - airflow-init
+    restart: always
+    networks:
+      - hadoop_network
+
+airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    depends_on: 
+      - postgres
+      - redis
+      - airflow-init
+    networks:
+      - hadoop_network
+
+airflow-flower:
+    <<: *airflow-common
+    container_name: airflow_flower
+    command: airflow flower
+    ports:
+      - "5555:5555"
+    depends_on: 
+      - postgres
+      - redis
+      - airflow-init
+    restart: always
+    networks:
+      - hadoop_network
 
 # volumes:
 #   hadoop_namenode:
