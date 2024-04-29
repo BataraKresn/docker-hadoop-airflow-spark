@@ -1,0 +1,155 @@
+services:
+  namenode:
+    build: ./namenode
+    container_name: namenode
+    volumes:
+      - /bigdata/hadoop_namenode:/hadoop/dfs/name
+      - ./data/:/hadoop-data/input
+      - ./map_reduce/:/hadoop-data/map_reduce
+      - ./requirements.txt:/hadoop-data/requirements.txt
+    environment:
+      - CLUSTER_NAME=development
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 9870:9870
+      - 8020:8020
+    networks:
+      - hadoop_network
+
+  resourcemanager:
+    build: ./resourcemanager
+    container_name: resourcemanager
+    restart: on-failure
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 8089:8088
+    networks:
+      - hadoop_network
+
+  historyserver:
+    build: ./historyserver
+    container_name: historyserver
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    volumes:
+      - /bigdata/hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 8188:8188
+    networks:
+      - hadoop_network
+
+  nodemanager1:
+    build: ./nodemanager
+    container_name: nodemanager1
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
+      - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
+    ports:
+      - 8042:8042
+    networks:
+      - hadoop_network
+
+  nodemanager2:
+    build: ./nodemanager
+    container_name: nodemanager2
+    depends_on:
+      - resourcemanager
+      - namenode
+      - datanode1
+      - datanode2
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
+      - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
+    ports:
+      - 8043:8042
+    networks:
+      - hadoop_network
+
+  datanode1:
+    build: ./datanode
+    container_name: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - /bigdata/hadoop_datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop_network
+
+  datanode2:
+    build: ./datanode
+    container_name: datanode2
+    depends_on:
+      - namenode
+    volumes:
+      - /bigdata/hadoop_datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+    networks:
+      - hadoop_network
+
+  datanode3:
+     build: ./datanode
+     container_name: datanode3
+     depends_on:
+       - namenode
+     volumes:
+       - /bigdata/hadoop_datanode3:/hadoop/dfs/data
+     env_file:
+       - ./hadoop.env
+     networks:
+       - hadoop_network
+
+# volumes:
+#   hadoop_namenode:
+#   hadoop_datanode1:
+#   hadoop_datanode2: 
+#   hadoop_datanode3:
+#   hadoop_historyserver:
+
+# volumes:
+#   hadoop_namenode:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/hadoop_namenode
+#   hadoop_datanode1:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/hadoop_datanode1
+#   hadoop_datanode2:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/hadoop_datanode2
+#   hadoop_datanode3:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/hadoop_datanode3
+#   hadoop_historyserver:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/hadoop_historyserver
+
+networks:
+  hadoop_network:
+    name: hadoop_network
+    external: true

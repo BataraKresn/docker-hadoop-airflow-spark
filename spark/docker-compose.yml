@@ -1,0 +1,77 @@
+services:
+  spark-master:
+    image: spark-base:3.5.0
+    container_name: spark-master
+    ports:
+      - "9090:8081"
+      - "7077:7077"
+    volumes:
+      - /bigdata/spark/apps:/opt/spark-apps
+      - /bigdata/spark/data:/opt/spark-data
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
+    networks:
+      - hadoop_network
+    command: /bin/sh -c "./start-spark.sh"
+
+  spark-worker-a:
+    image: spark-base:3.5.0
+    container_name: spark-worker-a
+    ports:
+      - "9091:8081"
+      - "7000:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_DRIVER_MEMORY=4G
+      - SPARK_EXECUTOR_MEMORY=2G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    volumes:
+      - /bigdata/spark/apps:/opt/spark-apps
+      - /bigdata/spark/data:/opt/spark-data
+    networks:
+      - hadoop_network
+    command: /bin/sh -c "./start-spark.sh"
+
+  spark-worker-b:
+    image: spark-base:3.5.0
+    container_name: spark-worker-b
+    ports:
+      - "9092:8081"
+      - "7001:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_DRIVER_MEMORY=4G
+      - SPARK_EXECUTOR_MEMORY=2G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    volumes:
+      - /bigdata/spark/apps:/opt/spark-apps
+      - /bigdata/spark/data:/opt/spark-data
+    networks:
+      - hadoop_network
+    command: /bin/sh -c "./start-spark.sh"
+
+# volumes:
+#   spark_apps:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/spark/apps
+#   spark_data:
+#           driver: local-persist
+#           driver_opts:
+#                mountpoint: /bigdata/spark/data
+
+networks:
+  hadoop_network:
+    name: hadoop_network
+    external: true
