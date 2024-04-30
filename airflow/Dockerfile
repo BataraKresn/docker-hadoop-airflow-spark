@@ -41,6 +41,7 @@ RUN set -ex \
     freetds-bin \
     default-libmysqlclient-dev \
     apt-utils \
+    redis-tools \
     curl \
     rsync \
     netcat-traditional \
@@ -58,16 +59,17 @@ RUN set -ex \
     && pip install ndg-httpsclient \
     && pip install connexion[swagger-ui] \
     && pip install pyasn1 \
-    && pip apache-airflow[celery] \
     && pip install pymongo \
     && pip install clickhouse_driver \
+    && pip install snowflake-connector-python \
     && pip install apache-airflow-providers-redis \
     && pip install apache-airflow-providers-celery \
+    && pip install snowflake-connector-python \
     && pip install celery \
     # && pip install flask-limiter \
     && pip install cython \
     && pip install apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-    && pip install 'redis' \
+    && pip install 'redis==3.2' \
     && pip install SQLAlchemy Flask-SQLAlchemy==2.4.4 \
     && pip install pendulum --upgrade \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \

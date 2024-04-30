@@ -1,0 +1,16 @@
+\connect postgres;
+
+CREATE USER hive;
+ALTER USER hive WITH PASSWORD 'hive';
+CREATE DATABASE metastore;
+GRANT ALL PRIVILEGES ON DATABASE metastore TO hive;
+
+CREATE USER airflow;
+ALTER USER airflow WITH PASSWORD 'airflow';
+CREATE DATABASE airflow;
+GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;
+
+CREATE USER hueuser;
+ALTER USER hueuser WITH PASSWORD 'hue12!';
+CREATE DATABASE huedb;
+GRANT ALL PRIVILEGES ON DATABASE huedb TO hueuser;

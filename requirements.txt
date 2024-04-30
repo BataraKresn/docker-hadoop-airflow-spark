@@ -15,4 +15,4 @@ celery
 apache-airflow-providers-apache-spark
 psycopg2-binary
 redis
-apache-airflow[celery]
+snowflake-connector-python

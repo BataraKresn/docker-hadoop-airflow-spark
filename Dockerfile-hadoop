@@ -94,6 +94,7 @@ RUN apt-get update && add-apt-repository ppa:deadsnakes/ppa \
     libzbar-dev \
     python3-dev \
     libpython3-dev \
+    redis-tools \
     qpdf \
     xvfb \
     gconf-service \

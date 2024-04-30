@@ -8,8 +8,22 @@ fi
 
 # build docker image with image name hadoop-base:3.3.6
 docker build -t hadoop-base:3.3.6 -f Dockerfile-hadoop .
+if [ $? -ne 0 ]; then
+  echo "Error building hadoop-base image" >&2
+  exit 1
+fi
+
+# Run Spark Cluster
+if [[ "$PWD" != "spark" ]]; then
+  cd spark && ./start-cluster.sh && cd ..
+fi
+
 # running image to container, -d to run it in daemon mode
 docker compose -f docker-compose-hadoop.yml up -d
+
+# cd postgres
+# docker build -t postgres:10.3 -f Dockerfile-postgres .
+# cd ..
 
 # Run Airflow Cluster
 if [[ "$PWD" != "airflow" ]]; then
@@ -18,10 +32,5 @@ fi
 
 # docker compose -f docker-compose-airflow.yml up -d
 docker compose -f docker-compose-airflow.yml up -d
-
-# Run Spark Cluster
-if [[ "$PWD" != "spark" ]]; then
-  cd spark && ./start-cluster.sh && cd ..
-fi
 
 echo "Current dir is $PWD"

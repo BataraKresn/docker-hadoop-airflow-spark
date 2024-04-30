@@ -11,10 +11,13 @@ sudo mkdir -p /bigdata/airflow/output
 sudo mkdir -p /bigdata/airflow/plugins
 sudo mkdir -p /bigdata/airflow/logs
 sudo mkdir -p /bigdata/postgres/data
+sudo mkdir -p /bigdata/postgres/logs
 sudo mkdir -p /bigdata/postgres/pgadmin_data
+sudo mkdir -p /bigdata/hue_data
 sudo mkdir -p /bigdata/spark/apps
 sudo mkdir -p /bigdata/spark/data
 sudo mkdir -p /bigdata/redis/data
+sudo mkdir -p /bigdata/hue_data
 
 sudo chown root -R /bigdata/
 sudo chmod 777 -R /bigdata/

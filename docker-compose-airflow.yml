@@ -6,7 +6,6 @@ x-airflow-common: &airflow-common
     - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
     - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
     - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
     - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
     - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
@@ -20,6 +19,7 @@ x-airflow-common: &airflow-common
     - /bigdata/airflow/logs:/home/airflow/logs
     - ./data/:/hadoop-data/input
     - ./map_reduce/:/hadoop-data/map_reduce
+    - ./airflow/airflow.cfg:/home/airflow.cfg
   depends_on:
     - postgres
     - redis
@@ -28,18 +28,27 @@ x-airflow-common: &airflow-common
 
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:10.3
     container_name: postgres
     environment:
-      - POSTGRES_USER=airflow
-      - POSTGRES_PASSWORD=airflow
-      - POSTGRES_DB=airflow
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      # - POSTGRES_USER=airflow
+      # - POSTGRES_PASSWORD=airflow
+      # - POSTGRES_DB=airflow
+      # - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - TZ=Asia/Jakarta
     ports:
       - 5432:5432
     volumes:
-    - /bigdata/postgres/data:/var/lib/postgresql/data   # Mount PostgreSQL data volume
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /bigdata/postgres/data:/var/lib/postgresql/data
+    - /bigdata/postgres/logs:/var/lib/postgresql/log
     - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    - ./postgres/01-postgres-init.sql:/docker-entrypoint-initdb.d/01-postgres-init.sql
+    - ./postgres/02-hive-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/02-hive-schema-2.3.0.postgres.sql
+    - ./postgres/03-hive-txn-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/03-hive-txn-schema-2.3.0.postgres.sql
     networks:
       - hadoop_network
     
@@ -59,7 +68,7 @@ services:
       - hadoop_network
   
   redis:
-    image: redis:alpine
+    image: redis:latest
     container_name: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -179,3 +188,4 @@ services:
 networks:
   hadoop_network:
     name: hadoop_network
+    external: true
