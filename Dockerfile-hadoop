@@ -52,8 +52,8 @@ COPY conf/hdfs-site.xml $HADOOP_CONF_DIR/hdfs-site.xml
 COPY conf/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
 COPY conf/yarn-site.xml $HADOOP_CONF_DIR/yarn-site.xml
 
-# ADD hadoop.env /hadoop.env
-# RUN set -x && cd / && ./entrypoint.sh
+ADD hadoop.env /hadoop.env
+RUN set -x && cd / && ./entrypoint.sh
 
 # --------------------------------------------------------
 # SPARK
@@ -119,7 +119,7 @@ RUN apt-get update && add-apt-repository ppa:deadsnakes/ppa \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --default-timeout=100 --upgrade pip
-RUN pip install pikepdf Cython numpy wheel setuptools --force-reinstall
+RUN pip install pikepdf Cython numpy wheel setuptools --force-reinstall pendulum
 
 ADD requirements.txt /requirements.txt
 

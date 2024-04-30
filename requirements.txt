@@ -16,3 +16,6 @@ apache-airflow-providers-apache-spark
 psycopg2-binary
 redis
 snowflake-connector-python
+pendulum
+airflow
+apache-airflow

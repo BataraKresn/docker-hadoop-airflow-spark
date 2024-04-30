@@ -59,6 +59,7 @@ RUN set -ex \
     && pip install ndg-httpsclient \
     && pip install connexion[swagger-ui] \
     && pip install pyasn1 \
+    && pip install pendulum \
     && pip install pymongo \
     && pip install clickhouse_driver \
     && pip install snowflake-connector-python \

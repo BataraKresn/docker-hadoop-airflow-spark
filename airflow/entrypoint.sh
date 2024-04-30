@@ -6,7 +6,7 @@ TRY_LOOP="20"
 # Global defaults and environment setup
 : "${AIRFLOW_HOME:="/usr/local/airflow"}"
 : "${AIRFLOW__CORE__FERNET_KEY:=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")}}"
-: "${AIRFLOW__CORE__EXECUTOR:=${EXECUTOR:-CeleryExecutor}}"
+: "${AIRFLOW__CORE__EXECUTOR:=${EXECUTOR:-Sequential}Executor}"
 
 # Configure to load DAG examples
 if [[ -z "$AIRFLOW__CORE__LOAD_EXAMPLES" && "${LOAD_EX:=n}" == "n" ]]; then
@@ -74,8 +74,10 @@ fi
 # CeleryExecutor requires a broker, typically Redis
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
   if [ -z "$AIRFLOW__CELERY__BROKER_URL" ]; then
+    : "${REDIS_PROTO:="redis://"}"
     : "${REDIS_HOST:="redis"}"
     : "${REDIS_PORT:="6379"}"
+    : "${REDIS_DBNUM:="0"}"
     
     AIRFLOW__CELERY__BROKER_URL="redis://$REDIS_HOST:$REDIS_PORT"
     export AIRFLOW__CELERY__BROKER_URL

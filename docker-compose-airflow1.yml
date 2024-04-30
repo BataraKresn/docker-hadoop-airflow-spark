@@ -11,7 +11,6 @@ x-airflow-common: &airflow-common
     - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
     - AIRFLOW__CORE__LOAD_EXAMPLES=False
     - RATELIMIT_STORAGE_URL=redis://redis:6379/0
-    - _PIP_ADDITIONAL_REQUIREMENTS=pendulum
     - TZ=Asia/Jakarta
   volumes:
     - /bigdata/airflow/output:/home/airflow/output
@@ -110,8 +109,6 @@ services:
       - airflow-init
       - redis
     restart: always
-    networks:
-      - hadoop_network
 
   airflow-scheduler:
     <<: *airflow-common
@@ -126,8 +123,6 @@ services:
       - airflow-init
       - redis
     restart: always
-    networks:
-      - hadoop_network
 
   airflow-flower:
     <<: *airflow-common
