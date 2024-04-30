@@ -11,6 +11,7 @@ RUN apt-get  install -y \
     netcat
 RUN mv /etc/apt/sources.list.d/nodesource.list.disabled /etc/apt/sources.list.d/nodesource.list
 
+COPY hue.ini /hue/desktop/conf/
 COPY ./entrypoint.sh .
 
 RUN chmod +x ./entrypoint.sh

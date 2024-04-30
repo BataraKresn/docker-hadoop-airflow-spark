@@ -27,8 +27,6 @@ RUN set -ex \
     libblas-dev \
     libatlas-base-dev \
     freetds-dev \
-    libkrb5-dev \
-    libsasl2-dev \
     libssl-dev \
     libffi-dev \
     libpq-dev \
@@ -48,42 +46,40 @@ RUN set -ex \
     locales \
     gcc \
     libpq5 \
-    && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
+    && sed -i 's/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && locale-gen \
     && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
     && useradd -ms /bin/bash -d ${AIRFLOW_USER_HOME} airflow \
-    && pip install -U pip setuptools wheel \
-    && pip install psycopg2-binary \
-    && pip install pytz \
-    && pip install pyOpenSSL \
-    && pip install ndg-httpsclient \
-    && pip install connexion[swagger-ui] \
-    && pip install pyasn1 \
-    && pip install pendulum \
-    && pip install pymongo \
-    && pip install clickhouse_driver \
-    && pip install snowflake-connector-python \
-    && pip install apache-airflow-providers-redis \
-    && pip install apache-airflow-providers-celery \
-    && pip install snowflake-connector-python \
-    && pip install celery \
-    # && pip install flask-limiter \
-    && pip install cython \
-    && pip install apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-    && pip install 'redis==3.2' \
-    && pip install SQLAlchemy Flask-SQLAlchemy==2.4.4 \
-    && pip install pendulum --upgrade \
-    && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
+    && pip install -U pip setuptools wheel && \
+    pip install \
+        psycopg2-binary \
+        pytz \
+        pyOpenSSL \
+        ndg-httpsclient \
+        connexion[swagger-ui] \
+        pyasn1 \
+        pendulum==2.1.2 \
+        pymongo \
+        clickhouse_driver \
+        snowflake-connector-python \
+        apache-airflow-providers-redis \
+        apache-airflow-providers-celery \
+        celery \
+        cython \
+        apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
+        'redis==3.2' \
+        SQLAlchemy Flask-SQLAlchemy==2.4.4 \
+        && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf \
-    /var/lib/apt/lists/* \
-    /tmp/* \
-    /var/tmp/* \
-    /usr/share/man \
-    /usr/share/doc \
-    /usr/share/doc-base
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/* \
+        /usr/share/man \
+        /usr/share/doc \
+        /usr/share/doc-base
 
 ADD entrypoint.sh /entrypoint.sh
 

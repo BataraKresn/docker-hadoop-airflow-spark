@@ -8,17 +8,16 @@ ENV PATH=${HIVE_HOME}/bin:$PATH
 
 WORKDIR /opt
 
-RUN apt-get install -yqq \
-    wget \
-    procps && \
-    wget -c -O hive.tar.gz https://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz && \
-    tar xvf hive.tar.gz && \
-    rm hive.tar.gz && \
-    mv apache-hive-${HIVE_VERSION}-bin hive && \
-    wget -O ${HIVE_HOME}/lib/postgresql-jdbc.jar https://jdbc.postgresql.org/download/postgresql-42.2.14.jar && \
-    apt-get --purge remove -yqq wget && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+#Install Hive and PostgreSQL JDBC
+RUN apt-get update && apt-get install -y wget procps && \
+	wget https://dlcdn.apache.org/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz && \
+	tar -xzvf apache-hive-$HIVE_VERSION-bin.tar.gz && \
+	mv apache-hive-$HIVE_VERSION-bin hive && \
+	wget https://jdbc.postgresql.org/download/postgresql-42.1.4.jar -O $HIVE_HOME/lib/postgresql-jdbc.jar && \
+	rm apache-hive-$HIVE_VERSION-bin.tar.gz && \
+	apt-get --purge remove -y wget && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
 # Spark should be compiled with Hive to be able to use it
 # hive-site.xml should be copied to $SPARK_HOME/conf folder

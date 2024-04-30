@@ -29,45 +29,45 @@ x-airflow-common: &airflow-common
 
 services:
   postgres:
-    image: postgres:10.3
-    container_name: postgres
-    environment:
-      # - POSTGRES_USER=airflow
-      # - POSTGRES_PASSWORD=airflow
-      # - POSTGRES_DB=airflow
-      # - POSTGRES_HOST_AUTH_METHOD=trust
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-      - TZ=Asia/Jakarta
-    ports:
-      - 5432:5432
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - /bigdata/postgres/data:/var/lib/postgresql/data
-    - /bigdata/postgres/logs:/var/lib/postgresql/log
-    - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
-    - ./postgres/01-postgres-init.sql:/docker-entrypoint-initdb.d/01-postgres-init.sql
-    - ./postgres/02-hive-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/02-hive-schema-2.3.0.postgres.sql
-    - ./postgres/03-hive-txn-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/03-hive-txn-schema-2.3.0.postgres.sql
-    networks:
-      - hadoop_network
-    
+      image: postgres:10.3
+      container_name: postgres
+      environment:
+        # - POSTGRES_USER=airflow
+        # - POSTGRES_PASSWORD=airflow
+        # - POSTGRES_DB=airflow
+        # - POSTGRES_HOST_AUTH_METHOD=trust
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_DB=postgres
+        - TZ=Asia/Jakarta
+      ports:
+        - 5432:5432
+      volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /bigdata/postgres/data:/var/lib/postgresql/data
+      - /bigdata/postgres/logs:/var/lib/postgresql/log
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./postgres/01-postgres-init.sql:/docker-entrypoint-initdb.d/01-postgres-init.sql
+      - ./postgres/02-hive-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/02-hive-schema-2.3.0.postgres.sql
+      - ./postgres/03-hive-txn-schema-2.3.0.postgres.sql:/docker-entrypoint-initdb.d/03-hive-txn-schema-2.3.0.postgres.sql
+      networks:
+        - hadoop_network
+
   pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=bigdata0124@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=3J1}/Ux82Y5;
-    ports:
-      - 5000:80 # Expose pgAdmin port for external access
-    volumes:
-      - /bigdata/postgres/pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - postgres
-    networks:
-      - hadoop_network
-  
+      image: dpage/pgadmin4
+      container_name: pgadmin
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=bigdata0124@gmail.com
+        - PGADMIN_DEFAULT_PASSWORD=3J1}/Ux82Y5;
+      ports:
+        - 5000:80 # Expose pgAdmin port for external access
+      volumes:
+        - /bigdata/postgres/pgadmin_data:/var/lib/pgadmin
+      depends_on:
+        - postgres
+      networks:
+        - hadoop_network
+
   redis:
     image: redis:latest
     container_name: redis
@@ -192,4 +192,5 @@ services:
 
 networks:
   hadoop_network:
-    driver: bridge
+    name: hadoop_network
+    external: true
