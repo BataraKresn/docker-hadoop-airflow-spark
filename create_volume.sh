@@ -18,6 +18,8 @@ sudo mkdir -p /bigdata/spark/apps
 sudo mkdir -p /bigdata/spark/data
 sudo mkdir -p /bigdata/redis/data
 sudo mkdir -p /bigdata/hue_data
+sudo mkdir -p /bigdata/livy/target/
+sudo mkdir -p /bigdata/livy/data/
 
 sudo chown root -R /bigdata/
 sudo chmod 777 -R /bigdata/

@@ -9,9 +9,8 @@ pandas
 pyspark
 pymongo
 clickhouse_driver
-apache-airflow-providers-redis==3.6.1
-apache-airflow-providers-celery==3.3.0
-apache-airflow-providers-fab==1.0.3
+apache-airflow-providers-redis
+apache-airflow-providers-celery
 celery
 apache-airflow-providers-apache-spark
 psycopg2-binary
@@ -19,3 +18,5 @@ apache-airflow-providers-smtp
 redis
 snowflake-connector-python
 pendulum
+SQLAlchemy 
+Flask-SQLAlchemy

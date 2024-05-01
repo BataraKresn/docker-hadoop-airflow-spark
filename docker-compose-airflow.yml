@@ -12,7 +12,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__FERNET_KEY: FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
     AIRFLOW__CORE__LOAD_EXAMPLES: False
     RATELIMIT_STORAGE_URL: redis://redis:6379/0
-    _PIP_ADDITIONAL_REQUIREMENTS: "pendulum apache-airflow-providers-redis==3.6.1 apache-airflow-providers-celery==3.3.1 apache-airflow-providers-fab==1.0.3"
+    _PIP_ADDITIONAL_REQUIREMENTS: "pendulum sqlalchemy apache-airflow-providers-redis apache-airflow-providers-celery apache-airflow-providers-fab"
     # - TZ=Asia/Jakarta
   volumes:
     - /bigdata/airflow/output:/home/airflow/output
@@ -94,7 +94,7 @@ services:
     entrypoint: /bin/bash
     command:
       - -c
-      - airflow db init && airflow db upgrade && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname user
+      - airflow db reset --yes && airflow db migrate && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname user
     restart: on-failure
     networks:
       - hadoop_network
@@ -136,7 +136,7 @@ services:
 
   airflow_flower:
     <<: *airflow-common
-    command: airflow flower
+    command: airflow celery flower
     container_name: airflow_flower
     ports:
       - "5555:5555"

@@ -5,8 +5,8 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.7.0
-ARG AIRFLOW_USER_HOME=/home/airflow
+ARG AIRFLOW_VERSION=2.3.3
+ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
 ENV AIRFLOW_HOME=${AIRFLOW_USER_HOME}
@@ -61,14 +61,15 @@ RUN set -ex \
         pendulum==2.1.2 \
         pymongo \
         clickhouse_driver \
+        sqlalchemy \
         snowflake-connector-python \
-        apache-airflow-providers-celery==3.3.0 \
-        apache-airflow-providers-redis==3.6.1 \
-        apache-airflow-providers-fab==1.0.3 \
+        apache-airflow-providers-celery \
+        apache-airflow-providers-redis \
+        # apache-airflow-providers-fab \
         apache-airflow-providers-smtp \
         cython \
         apache-airflow[crypto,redis,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-        SQLAlchemy \
+        SQLAlchemy Flask-SQLAlchemy \
     && pip cache purge \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
@@ -82,8 +83,12 @@ RUN set -ex \
         /usr/share/doc \
         /usr/share/doc-base
 
-ADD entrypoint.sh /entrypoint.sh
+# Clear Python cache to avoid storing stale compiled files
+RUN find . -name '__pycache__' -exec rm -rf {} +
 
+ADD entrypoint.sh /entrypoint.sh
+ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
+ADD custom_xcom_redis.py /usr/local/lib/python3.11/site-packages/airflow/models/
 RUN chmod a+x /entrypoint.sh
 
 ADD airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
