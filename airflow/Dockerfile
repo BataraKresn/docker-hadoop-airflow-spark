@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.3.3
+ARG AIRFLOW_VERSION=2.7.0
 ARG AIRFLOW_USER_HOME=/home/airflow
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -62,14 +62,15 @@ RUN set -ex \
         pymongo \
         clickhouse_driver \
         snowflake-connector-python \
-        apache-airflow-providers-redis \
-        apache-airflow-providers-celery \
-        celery \
+        apache-airflow-providers-celery==3.3.0 \
+        apache-airflow-providers-redis==3.6.1 \
+        apache-airflow-providers-fab==1.0.3 \
+        apache-airflow-providers-smtp \
         cython \
-        apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-        'redis==3.2' \
-        SQLAlchemy Flask-SQLAlchemy==2.4.4 \
-        && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
+        apache-airflow[crypto,redis,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
+        SQLAlchemy \
+    && pip cache purge \
+    && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
@@ -93,8 +94,9 @@ EXPOSE 8080 5555 8793
 USER airflow
 WORKDIR ${AIRFLOW_USER_HOME}
 
-RUN sed -i 's/^xcom_backend =.*/xcom_backend = airflow.providers.redis.xcom.RedisXCom/' /home/airflow/airflow.cfg && \
-    sed -i 's/^result_backend =.*/result_backend = db+redis:\/\/:@redis:6379\/0/' /home/airflow/airflow.cfg
+# RUN sed -i 's/^xcom_backend =.*/xcom_backend = airflow.providers.redis.xcom.RedisXCom/' /home/airflow/airflow.cfg
+# && \
+#     sed -i 's/^result_backend =.*/result_backend = db+redis:\/\/:@redis:6379\/0/' /home/airflow/airflow.cfg
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["airflow", "webserver"]

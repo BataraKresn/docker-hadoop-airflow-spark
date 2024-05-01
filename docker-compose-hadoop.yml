@@ -119,7 +119,58 @@ services:
        - ./hadoop.env
      networks:
        - hadoop_network
+  
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    env_file:
+      - ./hadoop.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
 
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    env_file:
+      - ./hadoop.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:50075 hive-metastore-postgresql:5432 resourcemanager:8088"
+    ports:
+      - "9083:9083"
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgres
+    ports:
+      - "5434:5432"
+
+  huedb:
+    image: postgres:12.1-alpine
+    container_name: huedb
+    volumes:
+      - /bigdata/hue_data:/var/lib/postgresl/data/
+    ports:
+      - "5433"
+    env_file:
+      - ./hadoop.env
+    environment:
+        SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083"
+  
+  hue:
+    image: gethue/hue:4.6.0
+    container_name: hue
+    environment:
+        SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3:9864 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083 huedb:5000"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./hue-overrides.ini:/usr/share/hue/desktop/conf/hue-overrides.ini
+    links:
+      - huedb
   # hive-metastore:
   #   build: ./hive/hive-metastore
   #   restart: always

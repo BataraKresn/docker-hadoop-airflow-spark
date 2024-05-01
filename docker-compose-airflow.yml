@@ -1,18 +1,19 @@
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-airflow-hadoop-base:3.3.6}
   environment:
-    - AIRFLOW_HOME=/home/airflow
-    - AIRFLOW__CORE_dags_folder=/home/airflow/dags
-    - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
-    - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
-    - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
-    - AIRFLOW__CORE__LOAD_EXAMPLES=False
-    - RATELIMIT_STORAGE_URL=redis://redis:6379/0
-    - _PIP_ADDITIONAL_REQUIREMENTS=pendulum
-    - TZ=Asia/Jakarta
+    AIRFLOW_HOME: /home/airflow
+    AIRFLOW__CORE_dags_folder: /home/airflow/dags
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+    AIRFLOW__CELERY__RESULT_BACKEND: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CORE__XCOM_BACKEND: airflow.providers.redis.xcom.RedisXCom
+    AIRFLOW__CORE__FERNET_KEY: FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
+    AIRFLOW__CORE__LOAD_EXAMPLES: False
+    RATELIMIT_STORAGE_URL: redis://redis:6379/0
+    _PIP_ADDITIONAL_REQUIREMENTS: "pendulum apache-airflow-providers-redis==3.6.1 apache-airflow-providers-celery==3.3.1 apache-airflow-providers-fab==1.0.3"
+    # - TZ=Asia/Jakarta
   volumes:
     - /bigdata/airflow/output:/home/airflow/output
     - ./dags:/home/airflow/dags
@@ -39,7 +40,7 @@ services:
         - POSTGRES_USER=postgres
         - POSTGRES_PASSWORD=postgres
         - POSTGRES_DB=postgres
-        - TZ=Asia/Jakarta
+        # - TZ=Asia/Jakarta
       ports:
         - 5432:5432
       volumes:
@@ -69,33 +70,36 @@ services:
         - hadoop_network
 
   redis:
-    image: redis:latest
+    image: redis:5.0.2
     container_name: redis
+    # environment:
+    #   - REDIS_HOST: redis
+    #   - REDIS_PORT: 6379
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 30s
       retries: 5
-    ports:
-      - 6379:6379
+    expose:
+      - 6379
     volumes:
       - /bigdata/redis/data:/data
     restart: always
     networks:
       - hadoop_network
 
-  airflow-init:
+  airflow_init:
     <<: *airflow-common
     container_name: airflow_init
     entrypoint: /bin/bash
     command:
       - -c
-      - airflow db migrate && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname airflow
+      - airflow db init && airflow db upgrade && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname user
     restart: on-failure
     networks:
       - hadoop_network
 
-  airflow-webserver:
+  airflow_webserver:
     <<: *airflow-common
     command: airflow webserver
     ports:
@@ -107,13 +111,14 @@ services:
       retries: 5
     container_name: airflow_webserver
     depends_on:
-      - airflow-init
+      - airflow_init
+      - postgres
       - redis
     restart: always
     networks:
       - hadoop_network
 
-  airflow-scheduler:
+  airflow_scheduler:
     <<: *airflow-common
     command: airflow scheduler
     healthcheck:
@@ -123,13 +128,13 @@ services:
       retries: 5
     container_name: airflow_scheduler
     depends_on:
-      - airflow-init
+      - airflow_init
       - redis
     restart: always
     networks:
       - hadoop_network
 
-  airflow-flower:
+  airflow_flower:
     <<: *airflow-common
     command: airflow flower
     container_name: airflow_flower
@@ -142,18 +147,16 @@ services:
       retries: 5
     restart: always
     depends_on:
-      - airflow-init
       - redis
     networks:
       - hadoop_network
 
-  airflow-triggerer:
+  airflow_triggerer:
     <<: *airflow-common
     command: triggerer
     container_name: airflow_triggerer
     restart: always
     depends_on:
-      - airflow-init
       - redis
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
@@ -163,7 +166,7 @@ services:
     networks:
       - hadoop_network
 
-  airflow-worker:
+  airflow_worker:
     <<: *airflow-common
     command: celery worker
     container_name: airflow_worker
@@ -175,17 +178,15 @@ services:
       timeout: 10s
       retries: 5
     depends_on:
-      - airflow-init
-      - redis
+      - airflow_scheduler
     networks:
       - hadoop_network
   
-  airflow-cli:
+  airflow_cli:
     <<: *airflow-common
     container_name: airflow_cli
     command: /bin/bash
     depends_on:
-      - airflow-init
       - redis
     networks:
       - hadoop_network
