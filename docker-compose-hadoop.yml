@@ -130,6 +130,8 @@ services:
       SERVICE_PRECONDITION: "hive-metastore:9083"
     ports:
       - "10000:10000"
+    networks:
+      - hadoop_network
 
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
@@ -147,6 +149,8 @@ services:
     container_name: hive-metastore-postgres
     ports:
       - "5434:5432"
+    networks:
+      - hadoop_network
 
   huedb:
     image: postgres:12.1-alpine
@@ -159,6 +163,8 @@ services:
       - ./hadoop.env
     environment:
         SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083"
+    networks:
+      - hadoop_network
   
   hue:
     image: gethue/hue:4.6.0
@@ -171,6 +177,8 @@ services:
       - ./hue-overrides.ini:/usr/share/hue/desktop/conf/hue-overrides.ini
     links:
       - huedb
+    networks:
+      - hadoop_network
 
 # volumes:
 #   hadoop_namenode:

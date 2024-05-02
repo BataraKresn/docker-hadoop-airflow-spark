@@ -8,14 +8,14 @@ numpy
 pandas
 pyspark
 pymongo
+celery
+redis
 clickhouse_driver
 apache-airflow-providers-redis
 apache-airflow-providers-celery
-celery
 apache-airflow-providers-apache-spark
 psycopg2-binary
 apache-airflow-providers-smtp
-redis
 snowflake-connector-python
 pendulum
 SQLAlchemy 

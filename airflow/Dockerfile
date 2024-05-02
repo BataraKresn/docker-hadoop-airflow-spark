@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.3.3
+ARG AIRFLOW_VERSION=2.7.2
 ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -65,7 +65,6 @@ RUN set -ex \
         snowflake-connector-python \
         apache-airflow-providers-celery \
         apache-airflow-providers-redis \
-        # apache-airflow-providers-fab \
         apache-airflow-providers-smtp \
         cython \
         apache-airflow[crypto,redis,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
@@ -88,7 +87,7 @@ RUN find . -name '__pycache__' -exec rm -rf {} +
 
 ADD entrypoint.sh /entrypoint.sh
 ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
-ADD custom_xcom_redis.py /usr/local/lib/python3.11/site-packages/airflow/models/
+ADD redisXcom.py /usr/local/lib/python3.11/site-packages/airflow/models/
 RUN chmod a+x /entrypoint.sh
 
 ADD airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg

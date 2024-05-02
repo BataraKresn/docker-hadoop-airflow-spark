@@ -31,6 +31,6 @@ if [[ "$PWD" != "airflow" ]]; then
 fi
 
 # docker compose -f docker-compose-airflow.yml up -d
-# docker compose -f docker-compose-airflow.yml up -d
+docker compose -f docker-compose-airflow.yml up -d
 
 echo "Current dir is $PWD"
