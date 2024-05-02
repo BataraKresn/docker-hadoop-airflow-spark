@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.7.2
+ARG AIRFLOW_VERSION=2.3.2
 ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -67,7 +67,8 @@ RUN set -ex \
         apache-airflow-providers-redis \
         apache-airflow-providers-smtp \
         cython \
-        apache-airflow[crypto,redis,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
+        'redis==3.2' \
+        apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
         "SQLAlchemy<2.0" Flask-SQLAlchemy \
     && pip cache purge \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
@@ -86,8 +87,8 @@ RUN set -ex \
 RUN find . -name '__pycache__' -exec rm -rf {} +
 
 ADD entrypoint.sh /entrypoint.sh
-ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
-ADD redisXcom.py /usr/local/lib/python3.11/site-packages/airflow/models/
+# ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
+# ADD redisXcom.py /usr/local/lib/python3.11/site-packages/airflow/models/
 RUN chmod a+x /entrypoint.sh
 
 ADD airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
@@ -103,4 +104,4 @@ WORKDIR ${AIRFLOW_USER_HOME}
 #     sed -i 's/^result_backend =.*/result_backend = db+redis:\/\/:@redis:6379\/0/' /home/airflow/airflow.cfg
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["airflow", "webserver"]
+CMD ["webserver"]

@@ -30,7 +30,7 @@ x-airflow-common: &airflow-common
 
 services:
   postgres:
-      image: postgres:10.3
+      image: postgres:13
       container_name: postgres
       environment:
         # - POSTGRES_USER=airflow
@@ -89,7 +89,7 @@ services:
     entrypoint: /bin/bash
     command:
       - -c
-      - airflow db reset --yes && airflow db migrate && airflow db upgrade && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname user
+      - airflow db reset --yes && airflow db init && airflow db upgrade && airflow users create --role Admin --username airflow --password airflow --email airflow@airflow.com --firstname airflow --lastname user
     restart: on-failure
     networks:
       - hadoop_network
