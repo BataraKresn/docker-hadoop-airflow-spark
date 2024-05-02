@@ -10,6 +10,7 @@ sudo mkdir -p /bigdata/hadoop_historyserver
 sudo mkdir -p /bigdata/airflow/output
 sudo mkdir -p /bigdata/airflow/plugins
 sudo mkdir -p /bigdata/airflow/logs
+sudo mkdir -p /bigdata/airflow/logs/scheduler
 sudo mkdir -p /bigdata/postgres/data
 sudo mkdir -p /bigdata/postgres/logs
 sudo mkdir -p /bigdata/postgres/pgadmin_data

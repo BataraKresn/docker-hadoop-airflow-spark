@@ -67,36 +67,36 @@ services:
       - hadoop_network
     command: /bin/sh -c "./start-spark.sh"
 
-  livy_server:
-    build: ./livy/
-    restart: always
-    container_name: livy_server
-    logging:
-      driver: "json-file"
-      options:
-          max-file: "5"
-          max-size: "10m"
-    environment:
-      - SPARK_MASTER_ENDPOINT=spark-master
-      - SPARK_MASTER_PORT=7077
-      - DEPLOY_MODE=client
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "livy", "8998" ]
-      timeout: 45s
-      interval: 10s
-      retries: 10
-    volumes:
-      - ./livy/conf/:/opt/bitnami/livy/conf/
-      - /bigdata/livy/target/:/target/
-      - /bigdata/livy/data/:/data/
-    ports:
-      - '8998:8998'
-    networks:
-      - hadoop_network
-    depends_on:
-      - spark-master
-      - spark-worker-1
-      - spark-worker-2
+  # livy_server:
+  #   build: ./livy/
+  #   restart: always
+  #   container_name: livy_server
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #         max-file: "5"
+  #         max-size: "10m"
+  #   environment:
+  #     - SPARK_MASTER_ENDPOINT=spark-master
+  #     - SPARK_MASTER_PORT=7077
+  #     - DEPLOY_MODE=client
+  #   healthcheck:
+  #     test: [ "CMD", "nc", "-z", "livy", "8998" ]
+  #     timeout: 45s
+  #     interval: 10s
+  #     retries: 10
+  #   volumes:
+  #     - ./livy/conf/:/opt/bitnami/livy/conf/
+  #     - /bigdata/livy/target/:/target/
+  #     - /bigdata/livy/data/:/data/
+  #   ports:
+  #     - '8998:8998'
+  #   networks:
+  #     - hadoop_network
+  #   depends_on:
+  #     - spark-master
+  #     - spark-worker-1
+  #     - spark-worker-2
 
 # volumes:
 #   spark_apps:

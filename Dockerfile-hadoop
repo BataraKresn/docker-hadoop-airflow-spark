@@ -34,6 +34,11 @@ RUN set -e \
     && ln -s /opt/hadoop-$HADOOP_VERSION/etc/hadoop /etc/hadoop \
     && mkdir /opt/hadoop-$HADOOP_VERSION/logs /hadoop-data
 
+COPY conf/core-site.xml $HADOOP_CONF_DIR/core-site.xml
+COPY conf/hdfs-site.xml $HADOOP_CONF_DIR/hdfs-site.xml
+COPY conf/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
+COPY conf/yarn-site.xml $HADOOP_CONF_DIR/yarn-site.xml
+
 # --------------------------------------------------------
 # SPARK
 # --------------------------------------------------------
@@ -66,7 +71,7 @@ RUN apt-get update \
 
 ADD requirements.txt /requirements.txt
 RUN pip install --default-timeout=100 --upgrade pip \
-    && pip install Cython numpy setuptools pendulum apache-airflow-providers-redis sqlalchemy SQLAlchemy Flask-SQLAlchemy apache-airflow-providers-celery apache-airflow-providers-smtp \
+    && pip install Cython numpy setuptools \
     && pip install -r /requirements.txt
 
 # Set up entrypoint

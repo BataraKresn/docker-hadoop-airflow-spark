@@ -65,11 +65,11 @@ RUN set -ex \
         snowflake-connector-python \
         apache-airflow-providers-celery \
         apache-airflow-providers-redis \
-        apache-airflow-providers-smtp \
         cython \
         'redis==3.2' \
         apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-        "SQLAlchemy<2.0" Flask-SQLAlchemy \
+        "SQLAlchemy<2.0" \
+        Flask-SQLAlchemy==2.4.4 \
     && pip cache purge \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
@@ -84,7 +84,7 @@ RUN set -ex \
         /usr/share/doc-base
 
 # Clear Python cache to avoid storing stale compiled files
-RUN find . -name '__pycache__' -exec rm -rf {} +
+# RUN find . -name '__pycache__' -exec rm -rf {} +
 
 ADD entrypoint.sh /entrypoint.sh
 # ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
@@ -104,4 +104,4 @@ WORKDIR ${AIRFLOW_USER_HOME}
 #     sed -i 's/^result_backend =.*/result_backend = db+redis:\/\/:@redis:6379\/0/' /home/airflow/airflow.cfg
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["webserver"]
+CMD ["airflow","webserver"]

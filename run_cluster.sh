@@ -7,11 +7,7 @@ if ! docker network inspect hadoop_network &>/dev/null; then
 fi
 
 # build docker image with image name hadoop-base:3.3.6
-docker build -t hadoop-base:3.3.6 -f Dockerfile-hadoop .
-if [ $? -ne 0 ]; then
-  echo "Error building hadoop-base image" >&2
-  exit 1
-fi
+docker build --no-cache -t hadoop-base:3.3.6 -f Dockerfile-hadoop .
 
 # Run Spark Cluster
 if [[ "$PWD" != "spark" ]]; then

@@ -6,7 +6,6 @@ pyYAML
 py4j
 numpy
 pandas
-pyspark
 pymongo
 celery
 redis
@@ -15,7 +14,6 @@ apache-airflow-providers-redis
 apache-airflow-providers-celery
 apache-airflow-providers-apache-spark
 psycopg2-binary
-apache-airflow-providers-smtp
 snowflake-connector-python
 pendulum
 SQLAlchemy 
