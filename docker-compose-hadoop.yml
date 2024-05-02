@@ -66,24 +66,6 @@ services:
     networks:
       - hadoop_network
 
-  # nodemanager2:
-  #   build: ./nodemanager
-  #   container_name: nodemanager2
-  #   depends_on:
-  #     - resourcemanager
-  #     - namenode
-  #     - datanode1
-  #     - datanode2
-  #   env_file:
-  #     - ./hadoop.env
-  #   volumes:
-  #     - /bigdata/hadoop_namenager_local:/hadoop/dfs/local
-  #     - /bigdata/hadoop_namenager_logs:/hadoop/dfs/logs
-  #   ports:
-  #     - 8043:8043
-  #   networks:
-  #     - hadoop_network
-
   datanode1:
     build: ./datanode
     container_name: datanode1
@@ -140,7 +122,7 @@ services:
       - ./hadoop.env
     command: /opt/hive/bin/hive --service metastore
     environment:
-      SERVICE_PRECONDITION: "namenode:9870 datanode:50075 hive-metastore-postgresql:5432 resourcemanager:8088"
+      SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3:9864 hive-metastore-postgresql:5432 resourcemanager:8088"
     ports:
       - "9083:9083"
     networks:
@@ -164,7 +146,7 @@ services:
     env_file:
       - ./hadoop.env
     environment:
-        SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083"
+        SERVICE_PRECONDITION: "namenode:9870 datanode1:9864 datanode2:9864 datanode3:9864 hive-metastore-postgresql:5432 resourcemanager:8088 hive-metastore:9083"
     networks:
       - hadoop_network
   
