@@ -68,7 +68,7 @@ RUN set -ex \
         apache-airflow-providers-smtp \
         cython \
         apache-airflow[crypto,redis,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-        SQLAlchemy Flask-SQLAlchemy \
+        "SQLAlchemy<2.0" Flask-SQLAlchemy \
     && pip cache purge \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \

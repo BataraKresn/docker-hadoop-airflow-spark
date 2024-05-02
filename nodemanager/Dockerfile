@@ -3,8 +3,8 @@
 FROM hadoop-base:3.3.6
 
 # Add Hadoop configuration files
-# ADD /conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-# ADD /conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+ADD ../conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+ADD ../conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
 
 # Other Dockerfile settings
 ENV HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name

@@ -143,6 +143,8 @@ services:
       SERVICE_PRECONDITION: "namenode:9870 datanode:50075 hive-metastore-postgresql:5432 resourcemanager:8088"
     ports:
       - "9083:9083"
+    networks:
+      - hadoop_network
 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
