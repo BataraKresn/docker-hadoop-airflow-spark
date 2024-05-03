@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.9.0
+ARG AIRFLOW_VERSION=2.7.4
 ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -62,9 +62,6 @@ RUN set -ex \
         clickhouse_driver \
         sqlalchemy \
         snowflake-connector-python \
-        apache-airflow-providers-redis \
-        apache-airflow-providers-celery>=3.3.0 \
-        apache-airflow-providers-apache-spark \
         cython \
         'redis==3.2' \
         apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
