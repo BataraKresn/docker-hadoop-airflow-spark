@@ -8,10 +8,7 @@ fi
 
 # --no-cache
 # build docker image with image name hadoop-base:3.3.6
-docker build --no-cache -t hadoop-base:3.3.6 -f Dockerfile-hadoop .
-
-# running image to container, -d to run it in daemon mode
-docker compose --no-cache -f docker-compose-hadoop.yml up -d
+docker build -t hadoop-base:3.3.6 -f Dockerfile-hadoop .
 
 # cd postgres
 # docker build -t postgres:10.3 -f Dockerfile-postgres .
@@ -23,7 +20,10 @@ if [[ "$PWD" != "airflow" ]]; then
 fi
 
 # docker compose -f docker-compose-airflow.yml up -d
-docker compose --no-cache -f docker-compose-airflow.yml up -d 
+docker compose -f docker-compose-airflow.yml up -d 
+
+# running image to container, -d to run it in daemon mode
+docker compose -f docker-compose-hadoop.yml up -d
 
 # Run Spark Cluster
 if [[ "$PWD" != "spark" ]]; then

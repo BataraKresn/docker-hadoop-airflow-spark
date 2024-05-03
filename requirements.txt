@@ -12,6 +12,6 @@ redis
 clickhouse_driver
 psycopg2-binary
 snowflake-connector-python
-pendulum
+pendulum==2.1.2
 SQLAlchemy 
 Flask-SQLAlchemy

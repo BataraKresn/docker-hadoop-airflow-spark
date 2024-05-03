@@ -6,15 +6,15 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE_dags_folder: /home/airflow/dags
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     AIRFLOW__CELERY__BROKER_CONNECTION_RETRY_ON_STARTUP: "True"
-    AIRFLOW__CELERY__RESULT_BACKEND: redis://redis:6379/0
-    # AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    # AIRFLOW__CELERY__RESULT_BACKEND: redis://:@redis:6379/0
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     # AIRFLOW__CORE__XCOM_BACKEND: redisXcom.RedisXCom
     AIRFLOW__CORE__FERNET_KEY: FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
     AIRFLOW__CORE__LOAD_EXAMPLES: False
-    RATELIMIT_STORAGE_URL: redis://redis:6379/0
+    RATELIMIT_STORAGE_URL: rredis://:@redis:6379/0
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     # _PIP_ADDITIONAL_REQUIREMENTS: "pendulum sqlalchemy apache-airflow-providers-redis apache-airflow-providers-celery"
     # - TZ=Asia/Jakarta
@@ -26,7 +26,7 @@ x-airflow-common: &airflow-common
     - /bigdata/airflow/logs/scheduler:/home/airflow/logs/scheduler
     - ./data/:/hadoop-data/input
     - ./map_reduce/:/hadoop-data/map_reduce
-    - ./airflow/airflow.cfg:/home/airflow.cfg
+    - ./airflow/airflow.cfg:/home/airflow/airflow.cfg
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -179,6 +179,7 @@ services:
     <<: *airflow-common
     command: celery worker
     container_name: airflow_worker
+    hostname: airflow-worker
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -230,6 +231,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - hadoop_network
 
 networks:
   hadoop_network:

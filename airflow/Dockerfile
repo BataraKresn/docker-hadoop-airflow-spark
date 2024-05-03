@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.7.4
+ARG AIRFLOW_VERSION=2.9.0
 ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -39,6 +39,8 @@ RUN set -ex \
     default-libmysqlclient-dev \
     apt-utils \
     redis-tools \
+    nano \
+    vim \
     curl \
     rsync \
     netcat-traditional \
@@ -62,6 +64,9 @@ RUN set -ex \
         clickhouse_driver \
         sqlalchemy \
         snowflake-connector-python \
+        apache-airflow-providers-redis \
+        apache-airflow-providers-celery \
+        apache-airflow-providers-apache-spark \
         cython \
         'redis==3.2' \
         apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
@@ -81,7 +86,7 @@ RUN set -ex \
         /usr/share/doc-base
 
 # Clear Python cache to avoid storing stale compiled files
-RUN find . -name '__pycache__' -exec rm -rf {} +
+# RUN find . -name '__pycache__' -exec rm -rf {} +
 
 
 # ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
