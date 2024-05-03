@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TERM linux
 
 # Airflow
-ARG AIRFLOW_VERSION=2.3.2
+ARG AIRFLOW_VERSION=2.9.0
 ARG AIRFLOW_USER_HOME=/home/airflow/
 ARG AIRFLOW_DEPS=""
 ARG PYTHON_DEPS=""
@@ -33,7 +33,6 @@ RUN set -ex \
     git \
     ' \
     && apt-get update -yqq \
-    && apt-get upgrade -yqq \
     && apt-get install -yqq --no-install-recommends \
     $buildDeps \
     freetds-bin \
@@ -63,13 +62,14 @@ RUN set -ex \
         clickhouse_driver \
         sqlalchemy \
         snowflake-connector-python \
-        apache-airflow-providers-celery \
         apache-airflow-providers-redis \
+        apache-airflow-providers-celery>=3.3.0 \
+        apache-airflow-providers-apache-spark \
         cython \
         'redis==3.2' \
         apache-airflow[crypto,celery,postgres,jdbc,mysql]==${AIRFLOW_VERSION} \
-        "SQLAlchemy<2.0" \
-        Flask-SQLAlchemy==2.4.4 \
+        SQLAlchemy \
+        Flask-SQLAlchemy \
     && pip cache purge \
     && if [ -n "${PYTHON_DEPS}" ]; then pip install ${PYTHON_DEPS}; fi \
     && apt-get purge --auto-remove -yqq $buildDeps \
@@ -84,14 +84,25 @@ RUN set -ex \
         /usr/share/doc-base
 
 # Clear Python cache to avoid storing stale compiled files
-# RUN find . -name '__pycache__' -exec rm -rf {} +
+RUN find . -name '__pycache__' -exec rm -rf {} +
 
-ADD entrypoint.sh /entrypoint.sh
+
 # ADD custom_code.py /usr/local/lib/python3.11/site-packages/sqlalchemy/sql/
 # ADD redisXcom.py /usr/local/lib/python3.11/site-packages/airflow/models/
+
+# Tambahkan bagian untuk membuat pengguna Airflow
+# RUN airflow db migrate && \
+#     flask fab create-admin \
+#         --username admin \
+#         --firstname Admin \
+#         --lastname User \
+#         --email bigdata0124@gmail.com \
+#         --password Admin123!
+
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
 
-ADD airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
+COPY airflow.cfg ${AIRFLOW_USER_HOME}/airflow.cfg
 RUN chown -R airflow: ${AIRFLOW_USER_HOME}
 
 EXPOSE 8080 5555 8793

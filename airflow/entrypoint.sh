@@ -87,7 +87,7 @@ if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     : "${REDIS_HOST:="redis"}"
     : "${REDIS_PORT:="6379"}"
     : "${REDIS_PASSWORD:=""}"
-    : "${REDIS_DBNUM:="1"}"
+    : "${REDIS_DBNUM:="0"}"
 
     # When Redis is secured by basic auth, it does not handle the username part of basic auth, only a token
     if [ -n "$REDIS_PASSWORD" ]; then
@@ -111,18 +111,14 @@ fi
 case "$1" in
   webserver)
     airflow initdb
-    if [ "$AIRFLOW__CORE__EXECUTOR" = "LocalExecutor" ] || [ "$AIRFLOW__CORE__EXECUTOR" = "SequentialExecutor" ]; then
+    if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ] || [ "$AIRFLOW__CORE__EXECUTOR" = "SequentialExecutor" ]; then
       # With the "Local" and "Sequential" executors it should all run in one container.
       airflow scheduler &
     fi
     exec airflow webserver
     ;;
-  worker|scheduler)
+  worker|scheduler|triggerer|flower)
     # Give the webserver time to run initdb.
-    sleep 10
-    exec airflow "$@"
-    ;;
-  flower)
     sleep 10
     exec airflow "$@"
     ;;

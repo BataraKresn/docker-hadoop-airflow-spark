@@ -1,0 +1,44 @@
+services:
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    environment:
+      SERVICE_PRECONDITION: "postgresql:5432"
+      HIVE_SITE_CONF: /conf/hive-site.xml
+    volumes:
+      - ./hive/conf:/conf
+    ports:
+      - "9083:9083"
+
+  hive-server2:
+    image: bde2020/hive:2.3.2-server
+    environment:
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+      HIVE_SITE_CONF: /conf/hive-site.xml
+    volumes:
+      - ./hive/conf:/conf
+    ports:
+      - "10000:10000"
+
+  beeline:
+    image: bde2020/hive:2.3.2-beeline
+    environment:
+      BEELINE_OPTS: -Dlog4j.configuration=/conf/beeline-log4j2.properties
+    volumes:
+      - ./hive/conf:/conf
+    command: /bin/bash -c "beeline -u jdbc:hive2://hive-server2:10000/default"
+    stdin_open: true
+    tty: true
+
+  postgresql:
+    image: postgres:9.6
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

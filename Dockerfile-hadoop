@@ -1,6 +1,6 @@
 FROM openjdk:11-jdk AS jdk
 
-FROM python:3.11
+FROM python:3.9
 
 USER root
 
