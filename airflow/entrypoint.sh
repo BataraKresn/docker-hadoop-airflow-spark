@@ -87,7 +87,7 @@ if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     : "${REDIS_HOST:="redis"}"
     : "${REDIS_PORT:="6379"}"
     : "${REDIS_PASSWORD:=""}"
-    : "${REDIS_DBNUM:="0"}"
+    : "${REDIS_DBNUM:="1"}"
 
     # When Redis is secured by basic auth, it does not handle the username part of basic auth, only a token
     if [ -n "$REDIS_PASSWORD" ]; then
@@ -117,10 +117,14 @@ case "$1" in
     fi
     exec airflow webserver
     ;;
-  worker|scheduler|triggerer|flower)
+  worker|scheduler|triggerer)
     # Give the webserver time to run initdb.
     sleep 10
-    exec airflow "$@"
+    exec airflow triggerer "$@"
+    ;;
+  flower)
+    sleep 10
+    exec airflow celery flower "$@"
     ;;
   version)
     exec airflow "$@"
